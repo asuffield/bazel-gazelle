@@ -40,12 +40,13 @@ import (
 // update commands. This includes everything in config.Config, but it also
 // includes some additional fields that aren't relevant to other packages.
 type updateConfig struct {
-	dirs        []string
-	emit        emitFunc
-	repos       []repo.Repo
-	walkMode    walk.Mode
-	patchPath   string
-	patchBuffer bytes.Buffer
+	dirs          []string
+	emit          emitFunc
+	repos         []repo.Repo
+	walkMode      walk.Mode
+	patchPath     string
+	patchBuffer   bytes.Buffer
+	workspacePath string
 }
 
 type emitFunc func(c *config.Config, f *rule.File) error
@@ -76,6 +77,7 @@ func (ucr *updateConfigurer) RegisterFlags(fs *flag.FlagSet, cmd string, c *conf
 	fs.StringVar(&ucr.mode, "mode", "fix", "print: prints all of the updated BUILD files\n\tfix: rewrites all of the BUILD files in place\n\tdiff: computes the rewrite but then just does a diff")
 	fs.BoolVar(&ucr.recursive, "r", true, "when true, gazelle will update subdirectories recursively")
 	fs.StringVar(&uc.patchPath, "patch", "", "when set with -mode=diff, gazelle will write to a file instead of stdout")
+	fs.StirngVar(&uc.workspacePath, "workspace", "", "read the WORKSPACE file from this path of repo_root")
 }
 
 func (ucr *updateConfigurer) CheckFlags(fs *flag.FlagSet, c *config.Config) error {
@@ -354,8 +356,10 @@ func newFixUpdateConfiguration(cmd command, args []string, cexts []config.Config
 	}
 
 	uc := getUpdateConfig(c)
-	workspacePath := filepath.Join(c.RepoRoot, "WORKSPACE")
-	if workspace, err := rule.LoadWorkspaceFile(workspacePath, ""); err != nil {
+	if uc.workspacePath == "" {
+		uc.workspacePath = filepath.Join(c.RepoRoot, "WORKSPACE")
+	}
+	if workspace, err := rule.LoadWorkspaceFile(uc.workspacePath, ""); err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
 		}

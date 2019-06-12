@@ -124,6 +124,8 @@ def _go_repository_impl(ctx):
             "fix",
             "-repo_root",
             ctx.path(""),
+            "-workspace",
+            ctx.path(Label("@//:WORKSPACE")),
         ]
         if ctx.attr.version:
             cmd.append("-go_experimental_module_mode")
