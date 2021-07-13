@@ -50,6 +50,8 @@ def _gazelle_runner_impl(ctx):
         args.extend(["-go_prefix", ctx.attr.prefix])
     if ctx.attr.build_tags:
         args.extend(["-build_tags", ",".join(ctx.attr.build_tags)])
+    if ctx.attr.build_config:
+        args.extend(["-repo_config", ctx.file.build_config.path])
     args.extend([ctx.expand_location(arg, ctx.attr.data) for arg in ctx.attr.extra_args])
 
     out_file = ctx.actions.declare_file(ctx.label.name + ".bash")
@@ -73,6 +75,7 @@ def _gazelle_runner_impl(ctx):
     )
     runfiles = ctx.runfiles(files = [
         ctx.executable.gazelle,
+        ctx.file.build_config,
         go_tool,
     ] + ctx.files.data).merge(
         ctx.attr.gazelle[DefaultInfo].default_runfiles,
@@ -108,6 +111,7 @@ _gazelle_runner = rule(
             default = "",
         ),
         "build_tags": attr.string_list(),
+        "build_config": attr.label(default = "@bazel_gazelle_go_repository_config//:WORKSPACE", allow_single_file = True),
         "prefix": attr.string(),
         "extra_args": attr.string_list(),
         "data": attr.label_list(allow_files = True),
